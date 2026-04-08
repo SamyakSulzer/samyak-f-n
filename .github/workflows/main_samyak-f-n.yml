@@ -46,23 +46,29 @@ jobs:
       contents: read
 
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js version
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+
+      - name: Install and Build
+        run: |
+          npm install
+          npm run build
+
+      - name: Organize Standalone Files
+        # We need to make sure the internal .next folder is present 
+        # inside the standalone directory before we zip it up.
+        run: |
+          cp -r public .next/standalone/public
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/static
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
         with:
           name: node-app
-      
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_A000B377EACE4040B45F1B3EEE1C4372 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_50E61459B98149FAB37E5C2B2F421BA7 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_70C07A295CC14804B57D4E700558A63D }}
-
-      - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: 'samyak-f-n'
-          slot-name: 'Production'
-          # --- CHANGE 3: Deploy the current folder content directly ---
-          package: .
+          # We upload the standalone folder which now contains its own .next/static
+          path: .next/standalone
