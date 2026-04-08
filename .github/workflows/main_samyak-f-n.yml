@@ -59,16 +59,17 @@ jobs:
           npm run build
 
       - name: Organize Standalone Files
-        # We need to make sure the internal .next folder is present 
-        # inside the standalone directory before we zip it up.
+        # We copy EVERYTHING server.js might need into the standalone folder
         run: |
           cp -r public .next/standalone/public
-          mkdir -p .next/standalone/.next
+          # This line is the fix: it copies the full .next folder (including hidden files) 
+          # into the standalone folder so server.js can find its production build.
+          cp -r .next .next/standalone/
+          # Ensure static files are also in the right spot for the web server
           cp -r .next/static .next/standalone/.next/static
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          # We upload the standalone folder which now contains its own .next/static
           path: .next/standalone
